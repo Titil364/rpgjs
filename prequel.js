@@ -1,9 +1,15 @@
 class Objet{
 
-	constructor(x, y, collide){
+	constructor(x, y, collide, spriteName){
 		this.x = x;
 		this.y = y;
 		this.collide = collide;
+		this.pas = 16;
+		this.estAficher = false;
+		this.sprite = document.createElement("img");
+		this.sprite.setAttribute("id", spriteName);
+		this.sprite.setAttribute("src", spriteName+".png");
+		this.sprite.style.zIndex = "1";
 	}
 
 	setX(x){ this.x = x;}
@@ -12,10 +18,27 @@ class Objet{
 	getY(){return this.y;}
 	getCollide(){return this.collide;}
 	
+	afficher(){
+		if(!this.estAfficher){
+			this.sprite.style.position = "absolute";
+			this.sprite.style.display = "inline";
+			this.sprite.style.top = this.y*this.pas+"px";
+			this.sprite.style.left = this.x*this.pas+"px";
+			this.sprite.style.width = "16px";
+			this.sprite.style.height = "16px";
+			this.estAfficher = true;
+			document.body.appendChild(this.sprite);
+		}
+	}
+	desafficher(){
+		this.sprite.style.display = "none";
+		this.estAfficher = false;
+	}
+	
 }
 class Arme extends Objet{
-	constructor(x, y, degat){
-		super(x, y, false);
+	constructor(x, y, degat, spriteName){
+		super(x, y, false, spriteName);
 		this.degat = degat;
 	}
 	getDegat(){return this.degat;}
@@ -52,6 +75,10 @@ class Entite{
 	}
 	estMort(){
 	}
+	setX(x){ this.x = x;}
+	setY(y){ this.y = y;}
+	getX(){return this.x;}
+	getY(){return this.y;}
 }
 class Inventaire{
 	constructor(nbItemMax){
@@ -76,7 +103,7 @@ class Inventaire{
 				while(index < this.objets.length && this.objets[index] != o){
 					index++;
 				}
-				this.objets[index] = null;	
+				this.objets[index] = null;
 				return o;
 			}
 		}
@@ -101,6 +128,7 @@ class Hero extends Entite{
 		this.sprite = document.createElement("img");
 		this.sprite.setAttribute("id", "hero");
 		this.sprite.setAttribute("src", "hero.png");
+		this.sprite.style.zIndex = "666";
 	}
 	
 	move(direction){
@@ -112,21 +140,21 @@ class Hero extends Entite{
 		 */
 		if(this.estAfficher){
 			if(direction == 0){
-				this.x-=this.vitesse*this.pas;
+				this.x-=1;
 			}
 			else if(direction == 1){
-				this.y-=this.vitesse*this.pas;
+				this.y-=1;
 			}
 			else if(direction == 2){
-				this.x+=this.vitesse*this.pas;
+				this.x+=1;
 			}
 			else if(direction == 3){
-				this.y+=this.vitesse*this.pas;
+				this.y+=1;
 			}
 
 			if(direction >= 0 && direction <= 3){
-				this.sprite.style.top = this.y+"px";
-				this.sprite.style.left = this.x+"px";
+				this.sprite.style.top = this.y*this.vitesse*this.pas+"px";
+				this.sprite.style.left = this.x*this.vitesse*this.pas+"px";
 			}
 		}
 	}
@@ -134,6 +162,7 @@ class Hero extends Entite{
 		if(!this.estAfficher)
 			return false;
 		if(!this.inventaire.contains(o)){
+			o.desafficher();
 			return this.inventaire.add(o);
 		}
 		return false;
@@ -146,6 +175,7 @@ class Hero extends Entite{
 			if(o == obj){
 				obj.setX(this.x);
 				obj.setY(this.y);
+				obj.afficher();
 				return true;
 			}
 			return false;
@@ -173,8 +203,8 @@ class Hero extends Entite{
 	afficher(){
 		if(!this.estAfficher){
 			this.sprite.style.position = "absolute";
-			this.sprite.style.top = this.y;
-			this.sprite.style.left = this.x;
+			this.sprite.style.top = this.y*this.pas+"px";
+			this.sprite.style.left = this.x*this.pas+"px";
 			this.sprite.style.width = "16px";
 			this.sprite.style.height = "16px";
 			this.estAfficher = true;
@@ -183,9 +213,17 @@ class Hero extends Entite{
 	}
 }
 
-let o = new Objet(0, 0, true);
-let arme = new Arme(0, 0, 15);
-let armor = new Armure(0, 0, 15);
+let o = new Objet(10, 10, true, "sword");
+o.afficher();
+let arme = new Arme(5, 5, 15, "sword");
+//let armor = new Armure(0, 0, 15);
+let objets = [] 
+objets.push(arme);
+
+objetsCollision = []
+objetsCollision.push(o)
+
+objets[0].afficher();
 let hero = new Hero("Teub");
 //######################################################################
 // Gestion des evenements
@@ -193,11 +231,12 @@ let hero = new Hero("Teub");
 
 document.body.addEventListener("keydown", start);
 document.body.addEventListener("keydown", deplacement);
+document.body.addEventListener("keydown", pick);
 
 //######################################################################
 function start(event){
 	var touche = event.keyCode;
-	if(touche == 32){
+	if(touche == 27){
 		hero.afficher();
 	}
 
@@ -212,15 +251,44 @@ function deplacement(event){
 	 */
 	var touche = event.keyCode;
 	if(touche == 37){
-		hero.move(0);
+		for(var i = 0; i < objetsCollision.length; i++){
+			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX()-1 && objetsCollision[i].getY() == hero.getY()){
+			}
+			else
+				hero.move(0);
+		}
 	}
 	if(touche == 38){
-		hero.move(1);
+		for(var i = 0; i < objetsCollision.length; i++){
+			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX() && objetsCollision[i].getY() == hero.getY()-1){
+			}else
+				hero.move(1);
+		}
 	}
 	if(touche == 39){
-		hero.move(2);
+		for(var i = 0; i < objetsCollision.length; i++){
+			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX()+1 && objetsCollision[i].getY() == hero.getY()){
+			}else
+				hero.move(2);
+		}
 	}
 	if(touche == 40){
-		hero.move(3);
+		for(var i = 0; i < objetsCollision.length; i++){
+			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX() && objetsCollision[i].getY() == hero.getY()+1){
+			}
+			else
+				hero.move(3);
+		}
+	}
+}
+function pick(event){
+	var touche = event.keyCode;
+	//bar d'espace = 32
+	if(touche == 32){
+		for(var i = 0; i < objets.length; i++){
+			if(objets[i].getX() == hero.getX() && objets[i].getY() == hero.getY()){
+				hero.pick(objets[i]);
+			}
+		}
 	}
 }
