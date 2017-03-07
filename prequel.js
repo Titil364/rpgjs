@@ -7,6 +7,7 @@ class Objet{
 		this.pas = 16;
 		this.estAficher = false;
 		this.sprite = document.createElement("img");
+		this.id = spriteName;
 		this.sprite.setAttribute("id", spriteName);
 		this.sprite.setAttribute("src", spriteName+".png");
 		this.sprite.style.zIndex = "1";
@@ -27,14 +28,22 @@ class Objet{
 			this.sprite.style.width = "16px";
 			this.sprite.style.height = "16px";
 			this.estAfficher = true;
-			document.body.appendChild(this.sprite);
+				document.body.appendChild(this.sprite);
 		}
 	}
 	desafficher(){
 		this.sprite.style.display = "none";
 		this.estAfficher = false;
 	}
-	
+
+	tailleInventaire(){
+		this.sprite.style.width = "24px";
+		this.sprite.style.height = "24px";
+	}	
+	tailleNormale(){
+		this.sprite.style.width = "16px";
+		this.sprite.style.height = "16px";
+	}	
 }
 class Arme extends Objet{
 	constructor(x, y, degat, spriteName){
@@ -84,7 +93,26 @@ class Inventaire{
 	constructor(nbItemMax){
 		this.max = nbItemMax;
 		this.objets = [];
+		this.estAfficher = false;
+		this.sprite = document.createElement("img");
+		this.div = document.createElement("div");
+		this.div.setAttribute("id", "inventaireContainer");
+		this.div.appendChild(this.sprite);
+		this.sprite.style.display = "none";
+		this.div.style.position = "absolute";
+		this.div.style.width = "160px";
+		this.div.style.height = "160px";
+		this.div.style.top = "300px";
+		this.div.style.left = "300px";
+		document.body.appendChild(this.div);
+		this.id = "inventaire";
+		this.x = 10;
+		this.y = 10;
+		this.sprite.setAttribute("id", this.id);
+		this.sprite.setAttribute("src", this.id+".png");
+		this.sprite.style.zIndex = "1000";
 	}
+	
 	add(o){
 		//On vérifie que l'objet est un objet
 		if(o instanceof Objet){
@@ -114,6 +142,37 @@ class Inventaire{
 			return this.objets.includes(o);
 		}
 		return false;
+	}
+	get(i){
+		return this.objets[i];
+	}
+	afficher(){
+		if(!this.estAfficher){
+			this.sprite.style.position = "relative";
+			this.sprite.style.display = "inline";
+			this.sprite.style.top = this.y*this.pas+"px";
+			this.sprite.style.left = this.x*this.pas+"px";
+			this.sprite.style.width = "16px";
+			this.sprite.style.height = "16px";
+			this.estAfficher = true;
+			for(var i = 0; i < this.objets.length; i++){
+				var o = this.get(i);
+				o.tailleNormale();
+				o.setX(1+this.x+i*16);
+				o.setY(this.y);
+				o.afficher();
+			}
+		}
+	}
+	desafficher(){
+		this.estAfficher = false;
+		this.sprite.style.display = "none";
+		for(var i = 0; i < this.objets.length; i++){
+			var o = this.get(i);
+			o.tailleNormale();
+			o.desafficher();
+		}
+		
 	}
 }
 
@@ -175,6 +234,7 @@ class Hero extends Entite{
 			if(o == obj){
 				obj.setX(this.x);
 				obj.setY(this.y);
+				obj.tailleNormale();
 				obj.afficher();
 				return true;
 			}
@@ -237,9 +297,12 @@ document.body.addEventListener("keydown", pick);
 function start(event){
 	var touche = event.keyCode;
 	if(touche == 27){
+		if(hero.estAfficher && !hero.inventaire.estAfficher)
+			displayInventaire();
+		else if(hero.inventaire.estAfficher)
+			hero.inventaire.desafficher();
 		hero.afficher();
 	}
-
 }
 
 function deplacement(event){
@@ -280,6 +343,9 @@ function deplacement(event){
 				hero.move(3);
 		}
 	}
+}
+function displayInventaire(){
+	hero.inventaire.afficher();
 }
 function pick(event){
 	var touche = event.keyCode;
