@@ -1,3 +1,9 @@
+let dossierImages = "images/";
+let ecranJeu = document.createElement("div");
+ecranJeu.setAttribute("id", "ecranJeu");
+ecranJeu.style.width = "320px";
+ecranJeu.style.height = "320px";
+document.body.appendChild(ecranJeu);
 class Objet{
 
 	constructor(x, y, collide, spriteName){
@@ -8,9 +14,12 @@ class Objet{
 		this.estAficher = false;
 		this.sprite = document.createElement("img");
 		this.id = spriteName;
+		this.sprite.style.display="none";
 		this.sprite.setAttribute("id", spriteName);
-		this.sprite.setAttribute("src", spriteName+".png");
+		this.sprite.setAttribute("src", dossierImages+spriteName+".png");
+		this.tailleNormale();
 		this.sprite.style.zIndex = "1";
+		ecranJeu.appendChild(this.sprite);
 	}
 
 	setX(x){ this.x = x;}
@@ -25,10 +34,7 @@ class Objet{
 			this.sprite.style.display = "inline";
 			this.sprite.style.top = this.y*this.pas+"px";
 			this.sprite.style.left = this.x*this.pas+"px";
-			this.sprite.style.width = "16px";
-			this.sprite.style.height = "16px";
 			this.estAfficher = true;
-				document.body.appendChild(this.sprite);
 		}
 	}
 	desafficher(){
@@ -53,8 +59,8 @@ class Arme extends Objet{
 	getDegat(){return this.degat;}
 }
 class Armure extends Objet{
-	constructor(x, y, armor){
-		super(x, y, false);
+	constructor(x, y, armor, spriteName){
+		super(x, y, false, spriteName);
 		this.armure = armor;
 	}
 }
@@ -64,8 +70,9 @@ class Entite{
 		this.y = y;
 		this.vie = vie;
 		this.mort = false;
-		this.armure = new Armure(0, 0, 1);
-		this.arme = new Arme(0, 0, 1);
+		//Undifined, à fixe;
+		this.armure = new Armure(0, 0, 1, "ArmorBadass");
+		this.arme = new Arme(0, 0, 1, "ArmeBadass");
 		this.estAfficher = false;
 	}
 	attaquer(e){
@@ -94,23 +101,35 @@ class Inventaire{
 		this.max = nbItemMax;
 		this.objets = [];
 		this.estAfficher = false;
-		this.sprite = document.createElement("img");
+
+		//Container de l'inventaire (limiter l'affichage)
 		this.div = document.createElement("div");
 		this.div.setAttribute("id", "inventaireContainer");
-		this.div.appendChild(this.sprite);
-		this.sprite.style.display = "none";
+		this.div.style.display = "none";
 		this.div.style.position = "absolute";
-		this.div.style.width = "160px";
-		this.div.style.height = "160px";
-		this.div.style.top = "300px";
-		this.div.style.left = "300px";
-		document.body.appendChild(this.div);
+		this.div.style.width = "138px";
+		this.div.style.height = "105px";
+		this.div.style.top = "160px";
+		this.div.style.left = "160px";
 		this.id = "inventaire";
 		this.x = 10;
 		this.y = 10;
-		this.sprite.setAttribute("id", this.id);
-		this.sprite.setAttribute("src", this.id+".png");
-		this.sprite.style.zIndex = "1000";
+		this.div.style.zIndex = "1000";
+		this.div.style.background = "url("+dossierImages+this.id+".jpg) -7px -29px"; 
+
+		ecranJeu.appendChild(this.div);
+
+		//Actions
+		this.containerListe = document.createElement("div");
+		this.containerListe.setAttribute("id", "containerListe");
+		this.containerListe.style.height = "30px";
+		this.containerListe.style.width = "50px";
+		this.containerListe.style.position = "absolute";
+		this.rem = document.createElement("rem");
+		this.rem.setAttribute("id", "rem");
+		this.rem.innerHTML = "Jeter";
+		this.containerListe.appendChild(this.rem);
+
 	}
 	
 	add(o){
@@ -119,6 +138,10 @@ class Inventaire{
 			//On vérifie que l'inventaire n'est pas plein
 			if(this.objets.length < this.max){
 				this.objets.push(o);
+				if(this.estAfficher){
+					this.desafficher();
+					this.afficher();
+				}
 			}
 			return true;
 		}
@@ -131,7 +154,7 @@ class Inventaire{
 				while(index < this.objets.length && this.objets[index] != o){
 					index++;
 				}
-				this.objets[index] = null;
+				 this.objets.splice(index, 1);
 				return o;
 			}
 		}
@@ -148,31 +171,39 @@ class Inventaire{
 	}
 	afficher(){
 		if(!this.estAfficher){
-			this.sprite.style.position = "relative";
-			this.sprite.style.display = "inline";
-			this.sprite.style.top = this.y*this.pas+"px";
-			this.sprite.style.left = this.x*this.pas+"px";
-			this.sprite.style.width = "16px";
-			this.sprite.style.height = "16px";
+			this.div.style.display = "inline";
+			this.div.style.top = this.y*this.pas+"px";
+			this.div.style.left = this.x*this.pas+"px";
 			this.estAfficher = true;
 			for(var i = 0; i < this.objets.length; i++){
 				var o = this.get(i);
-				o.tailleNormale();
-				o.setX(1+this.x+i*16);
+				o.tailleInventaire();
+				o.setX(this.x);
 				o.setY(this.y);
+				o.sprite.style.zIndex = "1001";
 				o.afficher();
+				o.sprite.style.top =  parseInt(o.sprite.style.top, 10)+5+"px";
+				o.sprite.style.left = parseInt(o.sprite.style.left, 10)+5+i*35+"px";
+				
 			}
 		}
 	}
 	desafficher(){
 		this.estAfficher = false;
-		this.sprite.style.display = "none";
+		this.div.style.display = "none";
 		for(var i = 0; i < this.objets.length; i++){
 			var o = this.get(i);
 			o.tailleNormale();
 			o.desafficher();
 		}
 		
+	}
+	afficherActions(y, x){
+		if(this.estAfficher){
+			this.containerListe.className = "actions";
+			this.containerListe.style.top = y+"px";
+			this.containerListe.style.left = x+"px";
+		}
 	}
 }
 
@@ -184,10 +215,22 @@ class Hero extends Entite{
 		this.vitesse = 1;
 		this.pas = 16;
 		this.estAfficher = false;
-		this.sprite = document.createElement("img");
+		/*this.sprite = document.createElement("img");
 		this.sprite.setAttribute("id", "hero");
-		this.sprite.setAttribute("src", "hero.png");
-		this.sprite.style.zIndex = "666";
+		this.sprite.setAttribute("src", dossierImages+"hero.png");
+		this.sprite.style.position = "relative";
+		*/
+
+		this.div = document.createElement("div");
+		this.div.setAttribute("id", "heroContainer");
+		this.div.style.display = "none";
+		this.div.style.width = "16px";
+		this.div.style.height = "16px";
+		this.div.style.position = "absolute";
+		this.div.style.zIndex = "666";
+		this.div.style.background = "url("+dossierImages+"hero.png) -3px -16px"; 
+			ecranJeu.appendChild(this.div);
+//		this.div.appendChild(this.sprite);
 	}
 	
 	move(direction){
@@ -212,8 +255,8 @@ class Hero extends Entite{
 			}
 
 			if(direction >= 0 && direction <= 3){
-				this.sprite.style.top = this.y*this.vitesse*this.pas+"px";
-				this.sprite.style.left = this.x*this.vitesse*this.pas+"px";
+				this.div.style.top = this.y*this.vitesse*this.pas+"px";
+				this.div.style.left = this.x*this.vitesse*this.pas+"px";
 			}
 		}
 	}
@@ -232,10 +275,18 @@ class Hero extends Entite{
 		if(o instanceof Objet && this.inventaire.contains(o)){
 			let obj = this.inventaire.remove(o);
 			if(o == obj){
+				let aff = this.inventaire.estAfficher;
+				if(aff){
+					this.inventaire.desafficher()
+					obj.desafficher();
+				}
 				obj.setX(this.x);
 				obj.setY(this.y);
 				obj.tailleNormale();
 				obj.afficher();
+				if(aff){
+					this.inventaire.afficher();
+				}
 				return true;
 			}
 			return false;
@@ -262,13 +313,12 @@ class Hero extends Entite{
 	}
 	afficher(){
 		if(!this.estAfficher){
-			this.sprite.style.position = "absolute";
-			this.sprite.style.top = this.y*this.pas+"px";
-			this.sprite.style.left = this.x*this.pas+"px";
-			this.sprite.style.width = "16px";
-			this.sprite.style.height = "16px";
+			this.div.style.display = "inline";
+			this.div.style.top = this.y*this.pas+"px";
+			this.div.style.left = this.x*this.pas+"px";
+	//		this.sprite.style.width = "16px";
+	//		this.sprite.style.height = "16px";
 			this.estAfficher = true;
-			document.body.appendChild(this.sprite);
 		}
 	}
 }
@@ -276,9 +326,15 @@ class Hero extends Entite{
 let o = new Objet(10, 10, true, "sword");
 o.afficher();
 let arme = new Arme(5, 5, 15, "sword");
+let arme2 = new Arme(7, 7, 15, "sword");
+let arme3 = new Arme(6, 6, 15, "sword");
+arme2.afficher();
+arme3.afficher();
 //let armor = new Armure(0, 0, 15);
 let objets = [] 
 objets.push(arme);
+objets.push(arme2);
+objets.push(arme3);
 
 objetsCollision = []
 objetsCollision.push(o)
@@ -290,10 +346,24 @@ let hero = new Hero("Teub");
 //######################################################################
 
 document.body.addEventListener("keydown", start);
-document.body.addEventListener("keydown", deplacement);
+document.body.addEventListener("keydown", deplacementGauche);
+document.body.addEventListener("keydown", deplacementHaut);
+document.body.addEventListener("keydown", deplacementDroite);
+document.body.addEventListener("keydown", deplacementBas);
 document.body.addEventListener("keydown", pick);
+document.body.addEventListener("keydown", drop);
+
+document.body.addEventListener("contextmenu", actionInventaire);
+
 
 //######################################################################
+function actionInventaire(event){
+	hero.inventaire.afficherActions();
+}
+function drop(event){
+	
+}
+
 function start(event){
 	var touche = event.keyCode;
 	if(touche == 27){
@@ -305,7 +375,8 @@ function start(event){
 	}
 }
 
-function deplacement(event){
+
+function deplacementGauche(event){
 	/* Touche - sens
 	 * 37 - gauche
 	 * 38 - haut
@@ -321,6 +392,9 @@ function deplacement(event){
 				hero.move(0);
 		}
 	}
+}
+function deplacementHaut(event){
+	var touche = event.keyCode;
 	if(touche == 38){
 		for(var i = 0; i < objetsCollision.length; i++){
 			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX() && objetsCollision[i].getY() == hero.getY()-1){
@@ -328,6 +402,9 @@ function deplacement(event){
 				hero.move(1);
 		}
 	}
+}
+function deplacementDroite(event){
+	var touche = event.keyCode;
 	if(touche == 39){
 		for(var i = 0; i < objetsCollision.length; i++){
 			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX()+1 && objetsCollision[i].getY() == hero.getY()){
@@ -335,6 +412,9 @@ function deplacement(event){
 				hero.move(2);
 		}
 	}
+}
+function deplacementBas(event){
+	var touche = event.keyCode;
 	if(touche == 40){
 		for(var i = 0; i < objetsCollision.length; i++){
 			if(objetsCollision[i].getCollide() && objetsCollision[i].getX() == hero.getX() && objetsCollision[i].getY() == hero.getY()+1){
@@ -358,3 +438,4 @@ function pick(event){
 		}
 	}
 }
+		
