@@ -205,8 +205,6 @@ class Inventaire{
 	}
 	afficherActions(y, x){
 		if(this.estAfficher){
-			alert(x);
-			alert(y);
 			this.containerListe.className = "actions";
 			this.containerListe.style.display = "inline";
 			this.containerListe.style.top = y+"px";
@@ -233,6 +231,7 @@ class Hero extends Entite{
 		this.nom = nom;
 		this.inventaire = new Inventaire(15);
 		this.vitesse = 1;
+		this.sens = HAUT;
 		this.estAfficher = false;
 		this.peutBouger = true;
 		/*this.sprite = document.createElement("img");
@@ -287,25 +286,29 @@ class Hero extends Entite{
 	tourner(direction){
 		var x;
 		var y;
-		if(direction == 0){
+		if(direction == GAUCHE || direction == 0){
 			var x = - (3);
 			var y = - (7*16);
 			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+			this.sens = GAUCHE;
 		}
-		else if(direction == 1){
+		else if(direction == HAUT || direction == 1){
 			var x = - (3);
 			var y = - (16);
 			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+			this.sens = HAUT;
 		}
-		else if(direction == 2){
+		else if(direction == DROITE || direction == 2){
 			var x = - (3);
 			var y = - (3*16);
 			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+			this.sens = DROITE;
 		}
-		else if(direction == 3){
+		else if(direction == BAS || direction == 3){
 			var x = - (3);
 			var y = - (5*16);
 			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+			this.sens = BAS;
 		}
 	}
 	pick(o){
@@ -376,15 +379,32 @@ class Hero extends Entite{
 	}
 }
 const typeTiles = {
-	"HERBE1" : {x:10, y:0},
-	"HERBE2" : {x:11, y:0},
-	"HERBE3" : {x:12, y:0},
-	"HERBE4" : {x:10, y:1},
-	"HERBE5" : {x:11, y:1},
-	"HERBE6" : {x:12, y:1},
-	"HERBE7" : {x:10, y:2},
-	"HERBE8" : {x:11, y:2},
-	"HERBE9" : {x:12, y:2}
+	"SOL1" : {x:10, y:0, collide:null},
+	"SOL2" : {x:11, y:0, collide:null},
+	"SOL3" : {x:12, y:0, collide:null},
+	"SOL4" : {x:10, y:1, collide:null},
+	"SOL5" : {x:11, y:1, collide:null},
+	"SOL6" : {x:12, y:1, collide:null},
+	"SOL7" : {x:10, y:2, collide:null},
+	"SOL8" : {x:11, y:2, collide:null},
+	"SOL9" : {x:12, y:2, collide:null},
+	"SOL10" : {x:12, y:2, collide:null}, //sol rocheux 2
+	"SOL11" : {x:12, y:2, collide:null}, //sol rocheux 3
+	"HERBE" : {x:10, y:7, collide:null},
+	"HERBEACOUPE" : {x:10, y:5, collide:true},
+	"TROUBOUCHE" : {x:10, y:8, collide:null},
+	"TROU" : {x:11, y:8, collide:null},
+	"ECHELLE" : {x:17, y:7, collide:null},
+	"STATUE" : {x:10, y:6, collide:true},
+	"ARBRE" : {x:14, y:2, collide:true},
+	"ARBRE1" : {x:15, y:2, collide:true},
+	"ARBRE2" : {x:16, y:2, collide:true},
+	"ARBRE3" : {x:14, y:3, collide:true},
+	"ARBRE4" : {x:15, y:3, collide:true},
+	"ARBRE5" : {x:16, y:3, collide:true},
+	"ARBRE6" : {x:14, y:4, collide:true},
+	"ARBRE7" : {x:15, y:5, collide:true},
+	"ARBRE8" : {x:16, y:4, collide:true},
 	
 }
 class Tile{
@@ -404,14 +424,45 @@ class Tile{
 		this.y = y;
 		i.style.left = this.x*pas+"px";
 		i.style.top = this.y*pas+"px";
+		this.collide = typeTiles[nom]["collide"];
 	}
-	append(stage){
-		if(stage == null){
-			document.body.appendChild(this.img);
+	append(stage, follow = 0){
+		if(follow == 0){
+			if(stage == null){
+				document.body.appendChild(this.img);
+			}
+			else{
+				stage.cases[this.y][this.x] = this.collide;
+				stage.stage.appendChild(this.img);
+			}
 		}
 		else{
-			stage.appendChild(this.img);
+			var n = 0;
+			var i = 0;
+			var add = false;
+			while(n < stage.height && !add){
+				i = 0;
+				if(stage.cases[n][stage.width-1] == -1){
+					while(i < stage.width){
+						if(stage.cases[n][i] == -1){
+							this.move(i, n);
+							stage.stage.appendChild(this.img);
+							stage.cases[n][i] = this.collide;
+							add = true;
+							break;
+						}
+						i+=1;
+					}
+				}
+				n+=1;
+			}
 		}
+	}
+	move(x, y){
+		this.x = x;
+		this.y = y;
+		this.img.style.left = this.x*pas+"px";
+		this.img.style.top = this.y*pas+"px";
 	}
 }
 class Stage{
@@ -429,22 +480,34 @@ class Stage{
 		for(var n = 0; n < this.height; n++){
 			this.cases[n] = new Array();
 			for(var i = 0; i < this.width; i++){
-				this.cases[n][i] = null;
+				this.cases[n][i] = -1;
 			}
 		}
-		
 		document.body.appendChild(this.stage);
 	}
 	create(){
-		new Tile("HERBE1", 0, 0).append(this.stage);
-		new Tile("HERBE2", 1, 0).append(this.stage);
-		new Tile("HERBE3", 2, 0).append(this.stage);
-		new Tile("HERBE4", 0, 1).append(this.stage);
-		new Tile("HERBE5", 1, 1).append(this.stage);
-		new Tile("HERBE6", 2, 1).append(this.stage);
-		new Tile("HERBE7", 0, 2).append(this.stage);
-		new Tile("HERBE8", 1, 2).append(this.stage);
-		new Tile("HERBE9", 2, 2).append(this.stage);
+		new Tile("SOL1", 0, 0).append(this);
+		new Tile("SOL2", 1, 0).append(this);
+		new Tile("SOL3", 2, 0).append(this);
+		new Tile("SOL4", 0, 1).append(this);
+		new Tile("SOL5", 1, 1).append(this);
+		new Tile("SOL6", 2, 1).append(this);
+		new Tile("SOL7", 0, 2).append(this);
+		new Tile("SOL8", 1, 2).append(this);
+		new Tile("SOL9", 2, 2).append(this, 1);
+	}
+	createRandom(){
+		var o = new Objet(0,0, true, "");
+		for(var n = 0; n < this.height; n++){
+			for(var i = 0; i < this.width; i++){
+				if(this.cases[n][i] == -1){
+				//	var nom = Object.keys(typeTiles)[rand(0, Object.keys(typeTiles).length)];
+					var nom = Object.keys(typeTiles)[rand(0, 17)];
+					new Tile(nom, 0, 0).append(this, 1);
+				}
+			}
+		}
+	
 	}
 	add(o){
 		if(o instanceof Objet){
@@ -458,8 +521,8 @@ class Stage{
 		}
 	}
 	get(x, y){
-		if(x > 0 && y > 0)
-			return this.cases[x][y];
+		if(x >= 0 && y >= 0)
+			return this.cases[y][x];
 		return null;
 	}
 	remove(o){
@@ -481,9 +544,13 @@ var dossierImages = "images/";
 	*/
 
 const pas = 16;
+const GAUCHE = 37;
+const HAUT = 38;
+const DROITE = 39;
+const BAS = 40;
 
-var longueurTerrain = 40;
-var largeurTerrain = 50;
+var longueurTerrain = 25;
+var largeurTerrain = 30;
 var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 
 	let hero = new Hero("Teub");
@@ -491,19 +558,9 @@ var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 		
 	let o = new Objet(10, 10, true, "sword");
 //	o.afficher();
-	let arme = new Arme(5, 5, 15, "sword");
-	let arme2 = new Arme(6, 6, 15, "sword");
-	let arme3 = new Arme(7, 7, 15, "sword");
 	//arme2.afficher();
 	//arme3.afficher();
 	//let armor = new Armure(0, 0, 15);
-
-	
-	terrain.add(arme);
-	terrain.add(arme2);
-	terrain.add(arme3);
-	terrain.add(o);
-
 
 
 	
@@ -511,24 +568,65 @@ var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 // Gestion des evenements
 //######################################################################
 
-document.body.addEventListener("keydown", start);
+document.body.addEventListener("keydown", afficherInventaire);
 document.body.addEventListener("keydown", deplacementGauche);
 document.body.addEventListener("keydown", deplacementHaut);
 document.body.addEventListener("keydown", deplacementDroite);
 document.body.addEventListener("keydown", deplacementBas);
 document.body.addEventListener("keydown", pick);
+document.body.addEventListener("keydown", begin);
 document.body.addEventListener("keydown", drop);
 
 hero.inventaire.div.addEventListener("click", actionInventaire);
-hero.inventaire.containerListe.addEventListener("mouseout", desafficherActions);
 
-hero.div.addEventListener("click", changerImage);
+hero.inventaire.containerListe.addEventListener("mouseout", desafficherActions);
+hero.div.addEventListener("click", danser);
+
+window.onload = start;
 
 //######################################################################
-function changerImage(event){
-	hero.faceaface();
+
+function begin(event){
+	var touche = event.keyCode;
+	//Touche Entrée - 13
+	if(touche == 13){
+		var s = document.getElementById("ecranTitre");
+		document.body.removeChild(s);
+		terrain.createRandom()
+	let arme = new Arme(5, 5, 15, "sword");
+	let arme2 = new Arme(6, 6, 15, "sword");
+	let arme3 = new Arme(7, 7, 15, "sword");
+	terrain.add(arme);
+	terrain.add(arme2);
+	terrain.add(arme3);
+	terrain.add(o);
+		hero.afficher();
+		document.body.removeEventListener("keydown", begin);
+	}
+		
 }
-function actionInventaire(event){
+function start(){
+	var s = document.createElement("div");
+	s.setAttribute("id", "ecranTitre");
+	s.innerHTML = "Appuyer sur entrée";
+	document.body.appendChild(s);	
+}
+
+function danser(event){
+	if(hero.sens == GAUCHE){
+		hero.tourner(HAUT);
+	}
+	else if(hero.sens == HAUT){
+		hero.tourner(DROITE);
+	}
+	else if(hero.sens == DROITE){
+		hero.tourner(BAS);
+	}
+	else if(hero.sens == BAS){
+		hero.tourner(GAUCHE);
+	}
+}
+function actionInventaire(event){i
 	var x = event.clientX;
 	var y = event.clientY;
 	if(x < 265 && x > 160 && y < 298 && y > 160)
@@ -541,21 +639,21 @@ function desafficherActions(event){
 	hero.inventaire.desafficherActions();
 }
 
-function start(event){
+function afficherInventaire(event){
 	var touche = event.keyCode;
 	if(touche == 27){
 		if(hero.estAfficher && !hero.inventaire.estAfficher)
 			displayInventaire();
 		else if(hero.inventaire.estAfficher)
 			hero.inventaire.desafficher();
-		hero.afficher();
 	}
 }
 
-const GAUCHE = 37;
-const HAUT = 38;
-const DROITE = 39;
-const BAS = 40;
+
+
+function attaquer(event){
+	
+}
 
 function deplacementGauche(event){
 	/* Touche - sens
@@ -566,28 +664,28 @@ function deplacementGauche(event){
 	 */
 	var touche = event.keyCode;
 	if(touche == GAUCHE){
-		if(!checkCollision(GAUCHE, hero.currentStage))
+		if(!checkCollision(GAUCHE, hero.currentStage, hero))
 			hero.move(0);
 	}
 }
 function deplacementHaut(event){
 	var touche = event.keyCode;
 	if(touche == HAUT){
-		if(!checkCollision(HAUT, hero.currentStage))
+		if(!checkCollision(HAUT, hero.currentStage, hero))
 			hero.move(1);
 	}
 }
 function deplacementDroite(event){
 	var touche = event.keyCode;
 	if(touche == DROITE){
-		if(!checkCollision(DROITE, hero.currentStage))
+		if(!checkCollision(DROITE, hero.currentStage, hero))
 				hero.move(2);
 	}
 }
 function deplacementBas(event){
 	var touche = event.keyCode;
 	if(touche == BAS){
-		if(!checkCollision(BAS, hero.currentStage))
+		if(!checkCollision(BAS, hero.currentStage, hero))
 			hero.move(3);
 	}
 }
@@ -605,32 +703,45 @@ function pick(event){
 		}
 	}
 }
-function checkCollision(direction, stage){
+function checkCollision(direction, stage, e){
 	if(direction == GAUCHE){
-		var o = stage.get(hero.getX()-1, hero.getY());
-		if(o != null && o.getCollide()){
+		var o = stage.get(e.getX()-1, e.getY());
+		if(o == true)
 			return true;
+		if((o != null && o != -1)){
+			if(o instanceof Objet && o.getCollide())
+				return true;
 		}
 		return false;
-	}
+	} 
 	else if(direction == HAUT){
-		var o = stage.get(hero.getX(), hero.getY()-1);
-		if(o != null && o.getCollide()){
+		var o = stage.get(e.getX(), e.getY()-1);
+		if(o == true)
 			return true;
+		if(o != null && o != -1){
+			if(o instanceof Objet && o.getCollide())
+				return true;
 		}
 		return false;
 	}
 	else if(direction == DROITE){
-		var o = stage.get(hero.getX()+1, hero.getY());
-		if(o != null && o.getCollide()){
-			return true;
+		var o = stage.get(e.getX()+1, e.getY());
+		if(o == true)
+			return true
+		if(o != null && o != -1){
+			if(o instanceof Objet && o.getCollide())
+				return true;
 		}
 		return false;
 	}
 	else if(direction == BAS){
-		var o = stage.get(hero.getX(), hero.getY()+1);
-		if(o != null && o.getCollide()){
+		var o = stage.get(e.getX(), e.getY()+1);
+
+		if(o == true)
 			return true;
+		if(o != null && o != -1){
+			if(o instanceof Objet && o.getCollide())
+				return true;
 		}
 		return false;
 	}

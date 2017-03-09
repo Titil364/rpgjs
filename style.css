@@ -12,3 +12,9 @@ body .stage{
 	border: 2px solid black;
 	z-index: -1;
 }
+#ecranTitre{
+	background-color= #777777;
+	height: 200px;
+	width: 200px;
+	border: 1px solid black;
+}
