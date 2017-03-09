@@ -1,5 +1,11 @@
+#containerListe{
+	display:flex;
+}
+#containerListe > *{
+	margin:auto;
+}
 #containerListe, #containerListe > *{
-	background-color= #555555;
+	background-color: #555555;
 	border: 1px solid black;
 }
 .actions{
@@ -13,8 +19,47 @@ body .stage{
 	z-index: -1;
 }
 #ecranTitre{
-	background-color= #777777;
+	background-color: #777777;
 	height: 200px;
 	width: 200px;
-	border: 1px solid black;
+	border: 2px solid black;
+	display:flex;
+	position:absolute;
+	top:100px;
+	left:125px;
+}
+#ecranTitre > *{
+	margin:auto;	
+}
+@keyframes clignote {
+	from, 0%{
+		border: 3px solid rgba(180, 100, 100, 0.3);
+		box-shadow:0px 0px 10px rgba(255, 120, 120, 0);
+		}
+	50%{
+		border: 3px solid rgba(180, 100, 100, 0.5);
+		box-shadow:0px 0px 0px rgba(255, 120, 120, 0.8);
+		}
+	75%{
+		border: 3px solid rgba(180, 100, 100, 0.7);
+		box-shadow:0px 0px 0px rgba(255, 120, 120, 0.8);
+		}
+	100%{
+		border: 3px solid rgba(180, 100, 100, 1);
+		box-shadow:0px 0px 10px rgba(255, 120, 120, 0.8);
+		}
+	
+}
+#inventaireCursor{
+	height: 31px;
+	width: 31px;
+	z-index: 1001;
+	position: relative;
+	text-shadow: 0 1px 0 white;
+	border-radius: 3px;
+	border: 2px solid rgba(255, 120, 120, 0.8);
+	box-shadow:0px 0px 10px rgba(200, 200, 200, 0.7);
+	animation-name: clignote;
+	animation-duration: 1.2s;
+	animation-iteration-count:infinite;
 }

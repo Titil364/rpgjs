@@ -42,8 +42,8 @@ class Objet{
 	}
 
 	tailleInventaire(){
-		this.sprite.style.width = "33px";
-		this.sprite.style.height = "33px";
+		this.sprite.style.width = "32px";
+		this.sprite.style.height = "32px";
 	}	
 	tailleNormale(){
 		this.sprite.style.width = "16px";
@@ -106,8 +106,8 @@ class Inventaire{
 		this.div.setAttribute("id", "inventaireContainer");
 		this.div.style.display = "none";
 		this.div.style.position = "absolute";
-		this.div.style.width = "138px";
-		this.div.style.height = "105px";
+		this.div.style.width = "136px";
+		this.div.style.height = "102px";
 		this.div.style.top = "160px";
 		this.div.style.left = "160px";
 		this.id = "inventaire";
@@ -132,7 +132,13 @@ class Inventaire{
 		
 		this.containerListe.style.display = "none";
 		this.div.appendChild(this.containerListe);
-
+		
+		this.cursor = document.createElement("div");
+		let c = this.cursor;
+		c.setAttribute("id", "inventaireCursor");
+		this.div.appendChild(c);
+		c.style.top = "0px";
+		c.style.left = "0px";
 	}
 	
 	add(o){
@@ -140,13 +146,14 @@ class Inventaire{
 		if(o instanceof Objet){
 			//On vérifie que l'inventaire n'est pas plein
 			if(this.objets.length < this.max){
+				o.sprite.addEventListener("click", drop);
 				this.objets.push(o);
 				if(this.estAfficher){
 					this.desafficher();
 					this.afficher();
 				}
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
@@ -157,7 +164,8 @@ class Inventaire{
 				while(index < this.objets.length && this.objets[index] != o){
 					index++;
 				}
-				 this.objets.splice(index, 1);
+				this.objets.splice(index, 1);
+				o.sprite.removeEventListener("click", drop);
 				return o;
 			}
 		}
@@ -177,18 +185,25 @@ class Inventaire{
 			hero.peutBouger = false;
 			hero.currentStage.stage.appendChild(this.div);
 			this.div.style.display = "inline";
-
+			var x = 0;
+			var y = 0;
+			var o;
 			this.estAfficher = true;
 			for(var i = 0; i < this.objets.length; i++){
-				var o = this.get(i);
+				if(i!=0 && i%4 == 0){
+					x = 0;
+					y++;
+				}
+				o = this.get(i);
 				o.tailleInventaire();
 				o.setX(this.x);
 				o.setY(this.y);
 				o.afficher();
 				o.sprite.style.zIndex = "1005";
-				o.sprite.style.top =  parseInt(o.sprite.style.top, 10)+"px";
-				o.sprite.style.left = parseInt(o.sprite.style.left, 10)+i*35+"px";
-				
+				o.sprite.style.top =  parseInt(o.sprite.style.top, 10)+y*35+"px";
+				o.sprite.style.left = parseInt(o.sprite.style.left, 10)+x*35+"px";
+
+				x++;
 			}
 		}
 	}
@@ -203,14 +218,32 @@ class Inventaire{
 		}
 		
 	}
-	afficherActions(y, x){
+	selectionner(x, y){
 		if(this.estAfficher){
-			this.containerListe.className = "actions";
-			this.containerListe.style.display = "inline";
-			this.containerListe.style.top = y+"px";
-			this.containerListe.style.left = x+"px";
+			var i = 0;
+			var n = 0;
+			var decalX = parseInt(this.div.style.left, 10);
+			var decalY = parseInt(this.div.style.top, 10);
+			x = x - decalX;
+			y = y - decalY;
+			var compteur = 0;
+			console.log("x : "+x+" | y : "+y);
+			while(i < 3){
+				n = 0;
+				while(n < 4){
+					if(35*n < x && 35*(n+1) > x && 35*i < y  && 35*(i+1) > y){
+						console.log(this.get(compteur));
+						return this.get(compteur);
+					}
+					compteur++;
+					n++;
+				}
+				i++;
+			}
+			
 		}
 	}
+	
 	desaficherActions(){
 		if(this.estAfficher){
 			this.containerListe.className = "actions";
@@ -223,22 +256,56 @@ class Inventaire{
 	removeStage(){
 		hero.currentStage.stage.removeChild(this.div);
 	}
+	moveCursor(direction){
+		if(direction == GAUCHE){
+			var x = (parseInt(this.cursor.style.left, 10)-33);
+			var y = parseInt(this.cursor.style.top, 10);
+			if(x < 0){
+				var x = (33*3);
+			}
+			this.cursor.style.top = y+"px";
+			this.cursor.style.left = x+"px";
+
+		}
+		else if(direction == HAUT){
+			var x = parseInt(this.cursor.style.left, 10);
+			var y = (parseInt(this.cursor.style.top, 10)-33);
+			if(y < 0){
+				var y = (33*2);
+			}
+			this.cursor.style.top = y+"px";
+			this.cursor.style.left = x+"px";
+		}
+		else if(direction == DROITE){
+			var x = (parseInt(this.cursor.style.left, 10)+33);
+			var y = parseInt(this.cursor.style.top, 10);
+			if(x > 33*3){
+				var x = 0;
+			}
+			this.cursor.style.top = y+"px";
+			this.cursor.style.left = x+"px";
+		}
+		else if(direction == BAS){
+			var x = parseInt(this.cursor.style.left, 10);
+			var y = (parseInt(this.cursor.style.top, 10)+33);
+			if(y > 33*2){
+				var y = 0;
+			}
+			this.cursor.style.top = y+"px";
+			this.cursor.style.left = x+"px";
+		}
+	}
 }
 
 class Hero extends Entite{
 	constructor(nom){
-		super(0, 0, 100);
+		super(rand(0,20), rand(0,20), 100);
 		this.nom = nom;
-		this.inventaire = new Inventaire(15);
+		this.inventaire = new Inventaire(12);
 		this.vitesse = 1;
 		this.sens = HAUT;
 		this.estAfficher = false;
 		this.peutBouger = true;
-		/*this.sprite = document.createElement("img");
-		this.sprite.setAttribute("id", "hero");
-		this.sprite.setAttribute("src", dossierImages+"hero.png");
-		this.sprite.style.position = "relative";
-		*/
 		this.currentStage = "";
 		this.div = document.createElement("div");
 		this.div.setAttribute("id", "heroContainer");
@@ -259,7 +326,6 @@ class Hero extends Entite{
 		 * 3 - bas
 		 */
 		if(this.estAfficher && this.peutBouger){
-			this.tourner(direction);
 			if(direction == 0){
 				this.x-=1;
 			}
@@ -273,7 +339,7 @@ class Hero extends Entite{
 				this.y+=1;
 			}
 			if(direction >= 0 && direction <= 3){
-				this.div.style.top = this.y*this.vitesse*pas+"px";				
+				this.div.style.top = this.y*this.vitesse*pas+"px";
 				this.div.style.left = this.x*this.vitesse*pas+"px";
 			}
 		}
@@ -315,13 +381,15 @@ class Hero extends Entite{
 		if(!this.estAfficher)
 			return false;
 		if(!this.inventaire.contains(o)){
-			this.currentStage.remove(o);
-			return this.inventaire.add(o);
+			if(this.inventaire.add(o)){
+				this.currentStage.remove(o);
+			}
+			return true;
 		}
 		return false;
 	}
 	drop(o){
-		if(!this.estAfficher)
+		if(!this.estAfficher || this.currentStage.get(hero.getX(), hero.getY()) instanceof Objet )
 			return false;
 		if(o instanceof Objet && this.inventaire.contains(o)){
 			let obj = this.inventaire.remove(o);
@@ -338,6 +406,8 @@ class Hero extends Entite{
 				if(aff){
 					this.inventaire.afficher();
 				}
+				this.currentStage.cases[o.getY()][o.getX()] = o;
+				o.sprite.style.zIndex = "0";
 				return true;
 			}
 			return false;
@@ -377,6 +447,47 @@ class Hero extends Entite{
 		this.stage = stage;
 		inventaire.changeStage();
 	}
+	attaquer(o){
+		if(o != null){
+			if(o instanceof Entite)
+				o.prendreDegats(this.arme.getDegat());	
+			if(o instanceof Tile)
+				o.abimer(this.arme.getDegat());
+		}
+		
+		if(this.sens == GAUCHE){
+			var x = - (67);
+			var y = - (7*16);
+			this.div.style.width = "28px";
+			this.div.style.left = (parseInt(this.div.style.left, 10)-15)+"px";
+			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+		}
+		else if(this.sens == HAUT){
+			var x = - (3+72);
+			var y = 0;
+			this.div.style.height = "30px";
+			this.div.style.top = (parseInt(this.div.style.top, 10)-16)+"px";
+			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px";
+		}
+		else if(this.sens == DROITE){
+			var x = - 118;
+			var y = - (3*16);
+			this.div.style.width = "30px";
+			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
+		}
+		else if(this.sens == BAS){
+			var x = - 125;
+			var y = - (4*16);
+			this.div.style.height = "30px";
+			this.div.style.top = parseInt(this.div.style.top, 10)+ +"px";
+			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px";
+		}
+		if(document.createEvent) {
+			document.body.dispatchEvent(aNormale);
+		} else {
+			document.body.fireEvent(aNormale.eventType, aNormale);
+		}
+	}
 }
 const typeTiles = {
 	"SOL1" : {x:10, y:0, collide:null},
@@ -392,6 +503,7 @@ const typeTiles = {
 	"SOL11" : {x:12, y:2, collide:null}, //sol rocheux 3
 	"HERBE" : {x:10, y:7, collide:null},
 	"HERBEACOUPE" : {x:10, y:5, collide:true},
+	"HERBECOUPE" : {x:11, y:5, collide:null},
 	"TROUBOUCHE" : {x:10, y:8, collide:null},
 	"TROU" : {x:11, y:8, collide:null},
 	"ECHELLE" : {x:17, y:7, collide:null},
@@ -425,6 +537,10 @@ class Tile{
 		i.style.left = this.x*pas+"px";
 		i.style.top = this.y*pas+"px";
 		this.collide = typeTiles[nom]["collide"];
+		this.vie = 0;
+		if(nom == "HERBEACOUPE")
+			this.vie = 1;
+
 	}
 	append(stage, follow = 0){
 		if(follow == 0){
@@ -447,7 +563,12 @@ class Tile{
 						if(stage.cases[n][i] == -1){
 							this.move(i, n);
 							stage.stage.appendChild(this.img);
-							stage.cases[n][i] = this.collide;
+							if(this.collide){
+								stage.cases[n][i] = this;
+							}
+							else{
+								stage.cases[n][i] = this.collide;
+							}
 							add = true;
 							break;
 						}
@@ -463,6 +584,21 @@ class Tile{
 		this.y = y;
 		this.img.style.left = this.x*pas+"px";
 		this.img.style.top = this.y*pas+"px";
+	}
+	getCollide(){
+		return this.collide;
+	}
+	abimer(degat){
+		if(this.name == "HERBEACOUPE"){
+			if(degat >= this.vie){
+				this.nom = "HERBECOUPE";
+				this.collide = typeTiles[this.nom]["collide"];
+				let a = -(16*typeTiles[this.nom]["x"]);
+				let b = -(16*typeTiles[this.nom]["y"]);
+				this.img.style.background = "url(tiles/base.png) "+a+"px "+b+"px";
+
+			}
+		}
 	}
 }
 class Stage{
@@ -497,7 +633,6 @@ class Stage{
 		new Tile("SOL9", 2, 2).append(this, 1);
 	}
 	createRandom(){
-		var o = new Objet(0,0, true, "");
 		for(var n = 0; n < this.height; n++){
 			for(var i = 0; i < this.width; i++){
 				if(this.cases[n][i] == -1){
@@ -536,12 +671,20 @@ class Stage{
 //######################################################################
 
 var dossierImages = "images/";
-/*var ecranJeu = document.createElement("div");
-	ecranJeu.setAttribute("id", "ecranJeu");
-	ecranJeu.style.width = "320px";
-	ecranJeu.style.height = "320px";
-	document.body.appendChild(ecranJeu);
-	*/
+
+
+//Creation evenement personaliser
+var aNormale;
+if (document.createEvent) {
+    aNormale = document.createEvent("HTMLEvents");
+    aNormale.initEvent("apparenceNormale", true, true);
+} else {
+	aNormale = document.createEventObject();
+	aNormale.eventType = "apparenceNormale";
+}
+aNormale.eventName = "apparenceNormale";
+
+
 
 const pas = 16;
 const GAUCHE = 37;
@@ -551,16 +694,12 @@ const BAS = 40;
 
 var longueurTerrain = 25;
 var largeurTerrain = 30;
-var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 
-	let hero = new Hero("Teub");
-		terrain.add(hero);
-		
-	let o = new Objet(10, 10, true, "sword");
-//	o.afficher();
-	//arme2.afficher();
-	//arme3.afficher();
-	//let armor = new Armure(0, 0, 15);
+var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
+let hero = new Hero("Teub");
+	terrain.add(hero);
+	
+let o = new Objet(10, 10, true, "sword");
 
 
 	
@@ -573,13 +712,13 @@ document.body.addEventListener("keydown", deplacementGauche);
 document.body.addEventListener("keydown", deplacementHaut);
 document.body.addEventListener("keydown", deplacementDroite);
 document.body.addEventListener("keydown", deplacementBas);
-document.body.addEventListener("keydown", pick);
+document.body.addEventListener("keydown", action);
 document.body.addEventListener("keydown", begin);
-document.body.addEventListener("keydown", drop);
+document.body.addEventListener("keydown", attaquer);
 
-hero.inventaire.div.addEventListener("click", actionInventaire);
+//evenement personnalisé
+document.body.addEventListener("apparenceNormale", apparenceNormale);
 
-hero.inventaire.containerListe.addEventListener("mouseout", desafficherActions);
 hero.div.addEventListener("click", danser);
 
 window.onload = start;
@@ -596,9 +735,13 @@ function begin(event){
 	let arme = new Arme(5, 5, 15, "sword");
 	let arme2 = new Arme(6, 6, 15, "sword");
 	let arme3 = new Arme(7, 7, 15, "sword");
+	let arme4 = new Arme(8, 8, 15, "sword");
+	let arme5 = new Arme(9, 9, 15, "sword");
 	terrain.add(arme);
 	terrain.add(arme2);
 	terrain.add(arme3);
+	terrain.add(arme4);
+	terrain.add(arme5);
 	terrain.add(o);
 		hero.afficher();
 		document.body.removeEventListener("keydown", begin);
@@ -608,10 +751,15 @@ function begin(event){
 function start(){
 	var s = document.createElement("div");
 	s.setAttribute("id", "ecranTitre");
-	s.innerHTML = "Appuyer sur entrée";
+	var text = document.createElement("div");
+	text.innerHTML = "Appuyer sur entrée";
 	document.body.appendChild(s);	
+	s.appendChild(text);
 }
-
+function drop(event){
+	var o = hero.inventaire.selectionner(event.clientX, event.clientY);
+	hero.drop(o);
+}
 function danser(event){
 	if(hero.sens == GAUCHE){
 		hero.tourner(HAUT);
@@ -626,21 +774,10 @@ function danser(event){
 		hero.tourner(GAUCHE);
 	}
 }
-function actionInventaire(event){i
-	var x = event.clientX;
-	var y = event.clientY;
-	if(x < 265 && x > 160 && y < 298 && y > 160)
-		hero.inventaire.afficherActions(x, y);
-}
-function drop(event){
-	
-}
-function desafficherActions(event){
-	hero.inventaire.desafficherActions();
-}
 
 function afficherInventaire(event){
 	var touche = event.keyCode;
+//			console.log(event.keyCode);
 	if(touche == 27){
 		if(hero.estAfficher && !hero.inventaire.estAfficher)
 			displayInventaire();
@@ -649,11 +786,31 @@ function afficherInventaire(event){
 	}
 }
 
+function apparenceNormale(){
+	//On remet l'apparence normale après une attaque
+		setTimeout(function(){
+				hero.div.style.width = "16px";
+				hero.div.style.height = "16px";
+				hero.div.style.top = hero.y*hero.vitesse*pas+"px";				
+				hero.div.style.left = hero.x*hero.vitesse*pas+"px";
+				hero.tourner(hero.sens);
+		},230);
+}
 
+//##########################################################################
 
 function attaquer(event){
-	
+	var touche = event.keyCode;
+	//Touche a - 65
+	if(touche == 65){
+		var col = checkCollision(hero.sens, hero.currentStage, hero);
+		if(col == false)
+			col = null;
+		
+		hero.attaquer(col);
+	}
 }
+
 
 function deplacementGauche(event){
 	/* Touche - sens
@@ -664,86 +821,83 @@ function deplacementGauche(event){
 	 */
 	var touche = event.keyCode;
 	if(touche == GAUCHE){
+		hero.tourner(GAUCHE);
 		if(!checkCollision(GAUCHE, hero.currentStage, hero))
 			hero.move(0);
+		if(hero.inventaire.estAfficher)
+			hero.inventaire.moveCursor(GAUCHE);
 	}
 }
 function deplacementHaut(event){
 	var touche = event.keyCode;
 	if(touche == HAUT){
+		hero.tourner(HAUT);
 		if(!checkCollision(HAUT, hero.currentStage, hero))
 			hero.move(1);
+		if(hero.inventaire.estAfficher)
+			hero.inventaire.moveCursor(HAUT);
 	}
 }
 function deplacementDroite(event){
 	var touche = event.keyCode;
 	if(touche == DROITE){
+		hero.tourner(DROITE);
 		if(!checkCollision(DROITE, hero.currentStage, hero))
 				hero.move(2);
+		if(hero.inventaire.estAfficher)
+			hero.inventaire.moveCursor(DROITE);
 	}
 }
 function deplacementBas(event){
 	var touche = event.keyCode;
 	if(touche == BAS){
+		hero.tourner(BAS);
 		if(!checkCollision(BAS, hero.currentStage, hero))
 			hero.move(3);
+		if(hero.inventaire.estAfficher)
+			hero.inventaire.moveCursor(BAS);
 	}
 }
 function displayInventaire(){
 	hero.inventaire.afficher();
 }
-function pick(event){
+function action(event){
 	var touche = event.keyCode;
 	//bar d'espace = 32
 	if(touche == 32){
-		if(hero.estAfficher){
+		//Ramasser objet
+		if(!hero.inventaire.estAfficher && hero.estAfficher){
 			var o = hero.currentStage.get(hero.getX(), hero.getY());
 			if(o != null)
 				hero.pick(o);
 		}
+		//action inventaire
+		else if(hero.inventaire.estAfficher){
+			
+		}
 	}
 }
 function checkCollision(direction, stage, e){
+	var o;
 	if(direction == GAUCHE){
-		var o = stage.get(e.getX()-1, e.getY());
-		if(o == true)
-			return true;
-		if((o != null && o != -1)){
-			if(o instanceof Objet && o.getCollide())
-				return true;
-		}
-		return false;
+		o = stage.get(e.getX()-1, e.getY());
+
 	} 
 	else if(direction == HAUT){
-		var o = stage.get(e.getX(), e.getY()-1);
-		if(o == true)
-			return true;
-		if(o != null && o != -1){
-			if(o instanceof Objet && o.getCollide())
-				return true;
-		}
-		return false;
+		o = stage.get(e.getX(), e.getY()-1);
+
 	}
 	else if(direction == DROITE){
-		var o = stage.get(e.getX()+1, e.getY());
-		if(o == true)
-			return true
-		if(o != null && o != -1){
-			if(o instanceof Objet && o.getCollide())
-				return true;
-		}
-		return false;
+		o = stage.get(e.getX()+1, e.getY());
 	}
 	else if(direction == BAS){
-		var o = stage.get(e.getX(), e.getY()+1);
-
-		if(o == true)
-			return true;
-		if(o != null && o != -1){
-			if(o instanceof Objet && o.getCollide())
-				return true;
-		}
-		return false;
+		o = stage.get(e.getX(), e.getY()+1);
+	}
+	if(o == true)
+		return true;
+	if(o != null && o != -1){
+		if((o instanceof Objet || o instanceof Tile) && o.getCollide())
+			return o;
 	}
 	return false;
 }
