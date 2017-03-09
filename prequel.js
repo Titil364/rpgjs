@@ -227,12 +227,12 @@ class Inventaire{
 			x = x - decalX;
 			y = y - decalY;
 			var compteur = 0;
-			console.log("x : "+x+" | y : "+y);
+			//console.log("x : "+x+" | y : "+y);
 			while(i < 3){
 				n = 0;
 				while(n < 4){
 					if(35*n < x && 35*(n+1) > x && 35*i < y  && 35*(i+1) > y){
-						console.log(this.get(compteur));
+				//		console.log(this.get(compteur));
 						return this.get(compteur);
 					}
 					compteur++;
@@ -299,7 +299,7 @@ class Inventaire{
 
 class Hero extends Entite{
 	constructor(nom){
-		super(rand(0,20), rand(0,20), 100);
+		super(rand(0,20), rand(0,20), 3);
 		this.nom = nom;
 		this.inventaire = new Inventaire(12);
 		this.vitesse = 1;
@@ -317,7 +317,38 @@ class Hero extends Entite{
 		this.div.style.background = "url("+dossierImages+"hero.png) -3px -16px"; 
 //		this.div.appendChild(this.sprite);
 	}
-	
+	afficherStats(){
+		var s = document.getElementById("stats");
+		if(s == null){
+			s = document.createElement("div");
+			s.setAttribute("id", "stats");
+			var d = document.createElement("div");
+			d.innerHTML = "Attaque : "+this.arme.getDegat();
+			s.appendChild(d);
+			
+			var containerCoeur = document.createElement("div");
+			containerCoeur.setAttribute("id", "containerCoeur");
+			containerCoeur.innerHTML = "Vie :  ";
+			var coeur;
+			for(var i = 0; i < this.vie; i++){
+				coeur = document.createElement("img");
+				coeur.setAttribute("class", "coeur");
+				coeur.setAttribute("src", dossierImages+"coeur.png");
+				containerCoeur.appendChild(coeur);
+			}
+			s.appendChild(containerCoeur);
+			document.body.appendChild(s);
+		}
+	}
+	prendreDegats(degats){
+		this.vie -= degats;
+		if(this.vie > 0){
+			var s = document.getElementById("stats");
+			s.removeChild(s.lastChild);	
+		}else{
+			this.estMort();
+		}
+	}
 	move(direction){
 		/* Déplace le joueur dans la direction donnée
 		 * 0 - gauche
@@ -440,6 +471,7 @@ class Hero extends Entite{
 	//		this.sprite.style.width = "16px";
 	//		this.sprite.style.height = "16px";
 			this.estAfficher = true;
+			this.afficherStats();
 		}
 	}
 	changeStage(stage){
@@ -821,7 +853,8 @@ function deplacementGauche(event){
 	 */
 	var touche = event.keyCode;
 	if(touche == GAUCHE){
-		hero.tourner(GAUCHE);
+		if(hero.peutBouger)	
+			hero.tourner(GAUCHE);
 		if(!checkCollision(GAUCHE, hero.currentStage, hero))
 			hero.move(0);
 		if(hero.inventaire.estAfficher)
@@ -831,7 +864,8 @@ function deplacementGauche(event){
 function deplacementHaut(event){
 	var touche = event.keyCode;
 	if(touche == HAUT){
-		hero.tourner(HAUT);
+		if(hero.peutBouger)
+			hero.tourner(HAUT);
 		if(!checkCollision(HAUT, hero.currentStage, hero))
 			hero.move(1);
 		if(hero.inventaire.estAfficher)
@@ -841,7 +875,8 @@ function deplacementHaut(event){
 function deplacementDroite(event){
 	var touche = event.keyCode;
 	if(touche == DROITE){
-		hero.tourner(DROITE);
+		if(hero.peutBouger)
+			hero.tourner(DROITE);
 		if(!checkCollision(DROITE, hero.currentStage, hero))
 				hero.move(2);
 		if(hero.inventaire.estAfficher)
@@ -851,7 +886,8 @@ function deplacementDroite(event){
 function deplacementBas(event){
 	var touche = event.keyCode;
 	if(touche == BAS){
-		hero.tourner(BAS);
+		if(hero.peutBouger)
+			hero.tourner(BAS);
 		if(!checkCollision(BAS, hero.currentStage, hero))
 			hero.move(3);
 		if(hero.inventaire.estAfficher)
@@ -880,17 +916,23 @@ function action(event){
 function checkCollision(direction, stage, e){
 	var o;
 	if(direction == GAUCHE){
+		if(e.getX()-1 < 0)
+			return true;
 		o = stage.get(e.getX()-1, e.getY());
-
 	} 
 	else if(direction == HAUT){
+		if(e.getY()-1 < 0)
+			return true;
 		o = stage.get(e.getX(), e.getY()-1);
-
 	}
 	else if(direction == DROITE){
+		if(e.getX()+1 > largeurTerrain-1)
+			return true;
 		o = stage.get(e.getX()+1, e.getY());
 	}
 	else if(direction == BAS){
+		if(e.getY()+1 > longueurTerrain-1)
+			return true;
 		o = stage.get(e.getX(), e.getY()+1);
 	}
 	if(o == true)

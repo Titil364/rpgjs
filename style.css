@@ -63,3 +63,11 @@ body .stage{
 	animation-duration: 1.2s;
 	animation-iteration-count:infinite;
 }
+#stats{
+	position:absolute;
+	top:420px;
+	border: 2px solid rgb(100,100,100);
+}
+#stats > *{
+	margin-right:3px;
+}
