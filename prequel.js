@@ -470,12 +470,22 @@ class Hero extends Entite{
 	}
 	prendreDegats(degats){
 		super.prendreDegats(degats);
-		if(this.vie > 0){
-			var s = document.getElementById("stats");
-			s.removeChild(s.lastChild);	
+		if(this.vie >= 0){
+			var s = document.getElementById("stats").lastChild;
+			s.removeChild(s.lastChild);
 		}
 	}
 	pick(o){
+		if(o instanceof Objet && o.id == "coeur"){
+			this.vie++;
+			var coeur = document.createElement("img");
+			coeur.setAttribute("class", "coeur");
+			coeur.setAttribute("src", dossierImages+"coeur.png");
+			var s = document.getElementById("stats").lastChild;
+			s.appendChild(coeur);
+			this.currentStage.remove(o);
+			return true;
+		}
 		if(!this.estAfficher)
 			return false;
 		if(!this.inventaire.contains(o)){
@@ -601,7 +611,9 @@ class Tile{
 			this.vie = 1;
 
 	}
-	append(stage, follow = 0){
+	append(stage, follow){
+		if(follow === "undefined")
+			follow = 0;
 		if(follow == 0){
 			if(stage == null){
 				document.body.appendChild(this.img);
@@ -696,7 +708,7 @@ class Stage{
 			for(var i = 0; i < this.width; i++){
 				if(this.cases[n][i] == -1){
 				//	var nom = Object.keys(typeTiles)[rand(0, Object.keys(typeTiles).length)];
-					var nom = Object.keys(typeTiles)[rand(0, 17)];
+					var nom = Object.keys(typeTiles)[rand(0, 18)];
 					new Tile(nom, 0, 0).append(this, 1);
 				}
 			}
@@ -705,7 +717,8 @@ class Stage{
 	}
 	add(o){
 		if(o instanceof Objet){
-			this.cases[o.getX()][o.getY()] = o;
+			if(o.id =="coeur")
+			this.cases[o.getY()][o.getX()] = o;
 			this.stage.appendChild(o.sprite);
 			o.afficher();
 		}
@@ -756,7 +769,6 @@ var largeurTerrain = 30;
 
 var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 let hero = new Hero("Teub");
-	terrain.add(hero);
 	
 
 
@@ -800,8 +812,10 @@ function begin(event){
 	terrain.add(arme3);
 	terrain.add(arme4);
 	terrain.add(arme5);
+	terrain.add(hero);
 		hero.afficher();
 		document.body.removeEventListener("keydown", begin);
+	spawn("coeur");
 	}
 		
 }
@@ -850,7 +864,6 @@ function equiper(event){
 	var touche = event.keyCode;
 	if(touche == 13){
 		var o = hero.inventaire.selectionner(0, 0, hero.inventaire.posCursor);
-		console.log(o);
 		if(o){
 			var currentArme = hero.equiper(o);
 			hero.inventaire.desafficher();
@@ -949,6 +962,7 @@ function action(event){
 		//Ramasser objet
 		if(!hero.inventaire.estAfficher && hero.estAfficher){
 			var o = hero.currentStage.get(hero.getX(), hero.getY());
+			console.log(o);
 			if(o != null)
 				hero.pick(o);
 		}
@@ -988,3 +1002,19 @@ function checkCollision(direction, stage, e){
 	}
 	return false;
 }
+function spawn(nom){
+	var x;
+	var y;
+	var stage = hero.currentStage;
+	console.log(stage);
+		x = rand(0, 24);
+		y = rand(0, 29);
+	if(stage.cases[y][x] == null){
+		var o = new Objet(x, y, false, nom);
+		stage.add(o);
+	}
+	terrain.add(o);
+}
+
+	
+
