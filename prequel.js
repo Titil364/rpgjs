@@ -64,6 +64,11 @@ class Armure extends Objet{
 		super(x, y, false, spriteName);
 		this.armure = armor;
 	}
+	deterioration(degat){
+		this.armure -= degat;
+		if(this.armure < 0)
+			this.armure = 1;
+	}
 }
 class Entite{
 	constructor(name, x, y, vie){
@@ -84,7 +89,8 @@ class Entite{
 	}
 	prendreDegats(degat){
 		if(this.estAfficher){
-			this.vie -= degat;
+			this.vie -= this.armure.armure - degat;
+			this.armure.deterioration(degat);
 			if(this.vie <= 0){
 				this.mort = true;
 				this.estMort();
@@ -321,7 +327,6 @@ class Inventaire{
 			pos = -1;
 		}
 		if(this.estAfficher){
-			console.log(pos);
 			if(pos > -1 && pos < this.max){
 				return this.get(pos);
 			}
@@ -476,16 +481,6 @@ class Hero extends Entite{
 		}
 	}
 	pick(o){
-		if(o instanceof Objet && o.id == "coeur"){
-			this.vie++;
-			var coeur = document.createElement("img");
-			coeur.setAttribute("class", "coeur");
-			coeur.setAttribute("src", dossierImages+"coeur.png");
-			var s = document.getElementById("stats").lastChild;
-			s.appendChild(coeur);
-			this.currentStage.remove(o);
-			return true;
-		}
 		if(!this.estAfficher)
 			return false;
 		if(!this.inventaire.contains(o)){
@@ -498,6 +493,18 @@ class Hero extends Entite{
 	}
 	estMort(){
 		//game over
+	}
+	recupererVie(o){
+		if(o instanceof Objet && o.id == "coeur"){
+			this.vie++;
+			var coeur = document.createElement("img");
+			coeur.setAttribute("class", "coeur");
+			coeur.setAttribute("src", dossierImages+"coeur.png");
+			var s = document.getElementById("stats").lastChild;
+			s.appendChild(coeur);
+			this.currentStage.remove(o);
+			return true;
+		}
 	}
 	equiper(equipement){
 		if(!this.estAfficher)
@@ -520,8 +527,9 @@ class Hero extends Entite{
 		if(o != null){
 			if(o instanceof Entite)
 				o.prendreDegats(this.arme.getDegat());	
-			if(o instanceof Tile)
-				o.abimer(this.arme.getDegat());
+			if(o instanceof Tile){
+				o.abimer(this.arme.getDegat());	
+			}
 		}
 		
 		if(this.sens == GAUCHE){
@@ -609,6 +617,8 @@ class Tile{
 		this.vie = 0;
 		if(nom == "HERBEACOUPE")
 			this.vie = 1;
+		if(nom == "STATUE")
+			this.vie = 99;
 
 	}
 	append(stage, follow){
@@ -670,6 +680,16 @@ class Tile{
 
 			}
 		}
+		else if(this.name == "STATUE"){
+			if(degat >= this.vie){
+				this.nom = "TROUBOUCHE";
+				this.collide = typeTiles[this.nom]["collide"];
+				let a = -(16*typeTiles[this.nom]["x"]);
+				let b = -(16*typeTiles[this.nom]["y"]);
+				this.img.style.background = "url(tiles/base.png) "+a+"px "+b+"px";
+
+			}
+		}
 	}
 }
 class Stage{
@@ -713,11 +733,9 @@ class Stage{
 				}
 			}
 		}
-	
 	}
 	add(o){
 		if(o instanceof Objet){
-			if(o.id =="coeur")
 			this.cases[o.getY()][o.getX()] = o;
 			this.stage.appendChild(o.sprite);
 			o.afficher();
@@ -728,13 +746,13 @@ class Stage{
 		}
 	}
 	get(x, y){
-		if(x >= 0 && y >= 0)
+		if(x >= 0 && x < this.width && y >= 0 && y < this.height)
 			return this.cases[y][x];
 		return null;
 	}
 	remove(o){
 		o.desafficher();
-		this.cases[o.getX()][o.getY()] = null;
+		this.cases[o.getY()][o.getX()] = null;
 	}
 }
 
@@ -803,10 +821,10 @@ function begin(event){
 		document.body.removeChild(s);
 		terrain.createRandom()
 	let arme = new Arme(5, 5, 15, "sword");
-	let arme2 = new Arme(6, 6, 15, "sword");
-	let arme3 = new Arme(7, 7, 15, "sword");
-	let arme4 = new Arme(8, 8, 15, "sword");
-	let arme5 = new Arme(9, 9, 15, "sword");
+	let arme2 = new Arme(6, 6, 35, "sword2");
+	let arme3 = new Arme(7, 7, 45, "sword3");
+	let arme4 = new Arme(8, 8, 99, "sword4");
+	let arme5 = new Arme(9, 9, 1, "armeBadass");
 	terrain.add(arme);
 	terrain.add(arme2);
 	terrain.add(arme3);
@@ -815,7 +833,7 @@ function begin(event){
 	terrain.add(hero);
 		hero.afficher();
 		document.body.removeEventListener("keydown", begin);
-	spawn("coeur");
+	setInterval(spawn("coeur"),10000);
 	}
 		
 }
@@ -962,7 +980,6 @@ function action(event){
 		//Ramasser objet
 		if(!hero.inventaire.estAfficher && hero.estAfficher){
 			var o = hero.currentStage.get(hero.getX(), hero.getY());
-			console.log(o);
 			if(o != null)
 				hero.pick(o);
 		}
@@ -997,8 +1014,11 @@ function checkCollision(direction, stage, e){
 	if(o == true)
 		return true;
 	if(o != null && o != -1){
-		if((o instanceof Objet || o instanceof Tile) && o.getCollide())
+		if(o.id == "coeur")
+			hero.recupererVie(o);
+		if((o instanceof Objet || o instanceof Tile) && o.getCollide()){
 			return o;
+		}
 	}
 	return false;
 }
@@ -1015,6 +1035,3 @@ function spawn(nom){
 	}
 	terrain.add(o);
 }
-
-	
-
