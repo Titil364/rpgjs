@@ -18,6 +18,9 @@ class Objet{
 		this.sprite.setAttribute("src", dossierImages+spriteName+".png");
 		this.tailleNormale();
 		this.sprite.style.zIndex = "1";
+		this.sprite.style.position = "absolute";
+		var s = document.getElementsByClassName("stage");
+		s[0].appendChild(this.sprite);
 	}
 
 	setX(x){ this.x = x;}
@@ -28,7 +31,6 @@ class Objet{
 	
 	afficher(){
 		if(!this.estAfficher){
-			this.sprite.style.position = "absolute";
 			this.sprite.style.display = "inline";
 			this.sprite.style.top = this.y*pas+"px";
 			this.sprite.style.left = this.x*pas+"px";
@@ -64,7 +66,8 @@ class Armure extends Objet{
 	}
 }
 class Entite{
-	constructor(x, y, vie){
+	constructor(name, x, y, vie){
+		this.img = name;
 		this.x = x;
 		this.y = y;
 		this.vie = vie;
@@ -81,7 +84,7 @@ class Entite{
 	}
 	prendreDegats(degat){
 		if(this.estAfficher){
-			this.vie -= degat*(1-armure.getArmor()/100);
+			this.vie -= degat;
 			if(this.vie <= 0){
 				this.mort = true;
 				this.estMort();
@@ -94,6 +97,101 @@ class Entite{
 	setY(y){ this.y = y;}
 	getX(){return this.x;}
 	getY(){return this.y;}
+	
+	tourner(direction){
+		var x;
+		var y;
+		if(direction == GAUCHE || direction == 0){
+			var x = - (3);
+			var y = - (7*16);
+			this.div.style.background = "url("+dossierImages+this.img+".png) "+x+"px "+y+"px"; 
+			this.sens = GAUCHE;
+		}
+		else if(direction == HAUT || direction == 1){
+			var x = - (3);
+			var y = - (16);
+			this.div.style.background = "url("+dossierImages+this.img+".png) "+x+"px "+y+"px"; 
+			this.sens = HAUT;
+		}
+		else if(direction == DROITE || direction == 2){
+			var x = - (3);
+			var y = - (3*16);
+			this.div.style.background = "url("+dossierImages+this.img+".png) "+x+"px "+y+"px"; 
+			this.sens = DROITE;
+		}
+		else if(direction == BAS || direction == 3){
+			var x = - (3);
+			var y = - (5*16);
+			this.div.style.background = "url("+dossierImages+this.img+".png) "+x+"px "+y+"px"; 
+			this.sens = BAS;
+		}
+	}
+	move(direction){
+		/* Déplace le joueur dans la direction donnée
+		 * 0 - gauche
+		 * 1 - haut
+		 * 2 - droite
+		 * 3 - bas
+		 */
+		if(this.estAfficher && this.peutBouger){
+			if(direction == 0){
+				this.x-=1;
+			}
+			else if(direction == 1){
+				this.y-=1;
+			}
+			else if(direction == 2){
+				this.x+=1;
+			}
+			else if(direction == 3){
+				this.y+=1;
+			}
+			if(direction >= 0 && direction <= 3){
+				this.div.style.top = this.y*this.vitesse*pas+"px";
+				this.div.style.left = this.x*this.vitesse*pas+"px";
+			}
+		}
+	}
+	drop(o){
+		if(!this.estAfficher || this.currentStage.get(this.getX(), this.getY()) instanceof Objet )
+			return false;
+		if(o instanceof Objet && this.inventaire.contains(o)){
+			let obj = this.inventaire.remove(o);
+			if(o == obj){
+				let aff = this.inventaire.estAfficher;
+				if(aff){
+					this.inventaire.desafficher()
+					obj.desafficher();
+				}
+				obj.setX(this.x);
+				obj.setY(this.y);
+				obj.tailleNormale();
+				obj.afficher();
+				if(aff){
+					this.inventaire.afficher();
+				}
+				this.currentStage.cases[o.getY()][o.getX()] = o;
+				o.sprite.style.zIndex = "0";
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+	afficher(){
+		if(!this.estAfficher){
+			this.div.style.display = "inline";
+			this.div.style.top = this.y*pas+"px";
+			this.div.style.left = this.x*pas+"px";
+			this.estAfficher = true;
+			this.afficherStats();
+		}
+	}
+	changeStage(stage){
+		inventaire.removeStage();
+		this.stage = stage;
+		inventaire.changeStage();
+	}
 }
 class Inventaire{
 	constructor(nbItemMax){
@@ -117,7 +215,7 @@ class Inventaire{
 		this.div.style.background = "url("+dossierImages+"inventaire.jpg) -8px -30px";
 		//this.div.style.top = this.y*pas+"px";
 		//this.div.style.left = this.x*pas+"px";
-		
+		this.posCursor = 0;	
 
 		//Actions
 		this.containerListe = document.createElement("div");
@@ -218,8 +316,15 @@ class Inventaire{
 		}
 		
 	}
-	selectionner(x, y){
+	selectionner(x, y, pos){
+		if(typeof pos === "undefined"){
+			pos = -1;
+		}
 		if(this.estAfficher){
+			console.log(pos);
+			if(pos > -1 && pos < this.max){
+				return this.get(pos);
+			}
 			var i = 0;
 			var n = 0;
 			var decalX = parseInt(this.div.style.left, 10);
@@ -242,6 +347,7 @@ class Inventaire{
 			}
 			
 		}
+		return null;
 	}
 	
 	desaficherActions(){
@@ -262,6 +368,10 @@ class Inventaire{
 			var y = parseInt(this.cursor.style.top, 10);
 			if(x < 0){
 				var x = (33*3);
+				this.posCursor+=3; 
+			}
+			else{
+				this.posCursor-=1;
 			}
 			this.cursor.style.top = y+"px";
 			this.cursor.style.left = x+"px";
@@ -272,6 +382,10 @@ class Inventaire{
 			var y = (parseInt(this.cursor.style.top, 10)-33);
 			if(y < 0){
 				var y = (33*2);
+				this.posCursor+=8;
+			}
+			else{
+				this.posCursor-=4;
 			}
 			this.cursor.style.top = y+"px";
 			this.cursor.style.left = x+"px";
@@ -281,6 +395,10 @@ class Inventaire{
 			var y = parseInt(this.cursor.style.top, 10);
 			if(x > 33*3){
 				var x = 0;
+				this.posCursor-= 3;
+			}
+			else{
+				this.posCursor+=1;
 			}
 			this.cursor.style.top = y+"px";
 			this.cursor.style.left = x+"px";
@@ -290,6 +408,10 @@ class Inventaire{
 			var y = (parseInt(this.cursor.style.top, 10)+33);
 			if(y > 33*2){
 				var y = 0;
+				this.posCursor -=8;
+			}
+			else{
+				this.posCursor += 4;
 			}
 			this.cursor.style.top = y+"px";
 			this.cursor.style.left = x+"px";
@@ -298,9 +420,9 @@ class Inventaire{
 }
 
 class Hero extends Entite{
-	constructor(nom){
-		super(rand(0,20), rand(0,20), 3);
-		this.nom = nom;
+	constructor(nomJ){
+		super("hero", rand(0,20), rand(0,20), 3);
+		this.nomJoueur = nomJ;
 		this.inventaire = new Inventaire(12);
 		this.vitesse = 1;
 		this.sens = HAUT;
@@ -322,13 +444,16 @@ class Hero extends Entite{
 		if(s == null){
 			s = document.createElement("div");
 			s.setAttribute("id", "stats");
+			s.style.top = (longueurTerrain+1)*16+"px";
+			
 			var d = document.createElement("div");
 			d.innerHTML = "Attaque : "+this.arme.getDegat();
 			s.appendChild(d);
-			
+				
 			var containerCoeur = document.createElement("div");
 			containerCoeur.setAttribute("id", "containerCoeur");
 			containerCoeur.innerHTML = "Vie :  ";
+
 			var coeur;
 			for(var i = 0; i < this.vie; i++){
 				coeur = document.createElement("img");
@@ -338,74 +463,16 @@ class Hero extends Entite{
 			}
 			s.appendChild(containerCoeur);
 			document.body.appendChild(s);
+		}else{
+			var d = s.firstChild;
+			d.innerHTML = "Attaque : "+this.arme.getDegat();
 		}
 	}
 	prendreDegats(degats){
-		this.vie -= degats;
+		super.prendreDegats(degats);
 		if(this.vie > 0){
 			var s = document.getElementById("stats");
 			s.removeChild(s.lastChild);	
-		}else{
-			this.estMort();
-		}
-	}
-	move(direction){
-		/* Déplace le joueur dans la direction donnée
-		 * 0 - gauche
-		 * 1 - haut
-		 * 2 - droite
-		 * 3 - bas
-		 */
-		if(this.estAfficher && this.peutBouger){
-			if(direction == 0){
-				this.x-=1;
-			}
-			else if(direction == 1){
-				this.y-=1;
-			}
-			else if(direction == 2){
-				this.x+=1;
-			}
-			else if(direction == 3){
-				this.y+=1;
-			}
-			if(direction >= 0 && direction <= 3){
-				this.div.style.top = this.y*this.vitesse*pas+"px";
-				this.div.style.left = this.x*this.vitesse*pas+"px";
-			}
-		}
-	}
-	faceaface(){
-		var x = - (3+3*16);
-		var y = - (5*16);
-		this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
-	}
-	tourner(direction){
-		var x;
-		var y;
-		if(direction == GAUCHE || direction == 0){
-			var x = - (3);
-			var y = - (7*16);
-			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
-			this.sens = GAUCHE;
-		}
-		else if(direction == HAUT || direction == 1){
-			var x = - (3);
-			var y = - (16);
-			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
-			this.sens = HAUT;
-		}
-		else if(direction == DROITE || direction == 2){
-			var x = - (3);
-			var y = - (3*16);
-			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
-			this.sens = DROITE;
-		}
-		else if(direction == BAS || direction == 3){
-			var x = - (3);
-			var y = - (5*16);
-			this.div.style.background = "url("+dossierImages+"hero.png) "+x+"px "+y+"px"; 
-			this.sens = BAS;
 		}
 	}
 	pick(o){
@@ -419,32 +486,6 @@ class Hero extends Entite{
 		}
 		return false;
 	}
-	drop(o){
-		if(!this.estAfficher || this.currentStage.get(hero.getX(), hero.getY()) instanceof Objet )
-			return false;
-		if(o instanceof Objet && this.inventaire.contains(o)){
-			let obj = this.inventaire.remove(o);
-			if(o == obj){
-				let aff = this.inventaire.estAfficher;
-				if(aff){
-					this.inventaire.desafficher()
-					obj.desafficher();
-				}
-				obj.setX(this.x);
-				obj.setY(this.y);
-				obj.tailleNormale();
-				obj.afficher();
-				if(aff){
-					this.inventaire.afficher();
-				}
-				this.currentStage.cases[o.getY()][o.getX()] = o;
-				o.sprite.style.zIndex = "0";
-				return true;
-			}
-			return false;
-		}
-		return false;
-	}
 	estMort(){
 		//game over
 	}
@@ -455,29 +496,15 @@ class Hero extends Entite{
 			if(equipement instanceof Arme && this.inventaire.contains(equipement)){
 				let currentArme = this.arme;
 				this.arme = equipement;
+				return currentArme;
 			}
 			else if(equipement instanceof Armure && this.inventaire.contains(equipement)){
 				let currentArmure = this.armure;
 				this.armure = equipement;
+				return true;
 			}
 		}
 		return false;
-	}
-	afficher(){
-		if(!this.estAfficher){
-			this.div.style.display = "inline";
-			this.div.style.top = this.y*pas+"px";
-			this.div.style.left = this.x*pas+"px";
-	//		this.sprite.style.width = "16px";
-	//		this.sprite.style.height = "16px";
-			this.estAfficher = true;
-			this.afficherStats();
-		}
-	}
-	changeStage(stage){
-		inventaire.removeStage();
-		this.stage = stage;
-		inventaire.changeStage();
 	}
 	attaquer(o){
 		if(o != null){
@@ -731,7 +758,6 @@ var terrain = new Stage("Stage1", longueurTerrain, largeurTerrain);
 let hero = new Hero("Teub");
 	terrain.add(hero);
 	
-let o = new Objet(10, 10, true, "sword");
 
 
 	
@@ -774,7 +800,6 @@ function begin(event){
 	terrain.add(arme3);
 	terrain.add(arme4);
 	terrain.add(arme5);
-	terrain.add(o);
 		hero.afficher();
 		document.body.removeEventListener("keydown", begin);
 	}
@@ -811,10 +836,29 @@ function afficherInventaire(event){
 	var touche = event.keyCode;
 //			console.log(event.keyCode);
 	if(touche == 27){
-		if(hero.estAfficher && !hero.inventaire.estAfficher)
+		if(hero.estAfficher && !hero.inventaire.estAfficher){
 			displayInventaire();
-		else if(hero.inventaire.estAfficher)
+			document.body.addEventListener("keydown", equiper);
+		}
+		else if(hero.inventaire.estAfficher){
 			hero.inventaire.desafficher();
+			document.body.removeEventListener("keydown", equiper);
+		}
+	}
+}
+function equiper(event){
+	var touche = event.keyCode;
+	if(touche == 13){
+		var o = hero.inventaire.selectionner(0, 0, hero.inventaire.posCursor);
+		console.log(o);
+		if(o){
+			var currentArme = hero.equiper(o);
+			hero.inventaire.desafficher();
+			hero.inventaire.remove(o);
+			hero.inventaire.add(currentArme);
+			hero.inventaire.afficher();
+			hero.afficherStats();
+		}
 	}
 }
 
@@ -826,9 +870,10 @@ function apparenceNormale(){
 				hero.div.style.top = hero.y*hero.vitesse*pas+"px";				
 				hero.div.style.left = hero.x*hero.vitesse*pas+"px";
 				hero.tourner(hero.sens);
-		},230);
+		},180);
+		setTimeout(function(){
+		},250);
 }
-
 //##########################################################################
 
 function attaquer(event){

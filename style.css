@@ -1,3 +1,7 @@
+body{
+	margin:0;
+	padding:0;
+}
 #containerListe{
 	display:flex;
 }
@@ -65,8 +69,8 @@ body .stage{
 }
 #stats{
 	position:absolute;
-	top:420px;
 	border: 2px solid rgb(100,100,100);
+	width: 128px;
 }
 #stats > *{
 	margin-right:3px;
